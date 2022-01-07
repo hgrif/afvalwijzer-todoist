@@ -1,0 +1,30 @@
+name: py
+on:
+  push:
+    branches:
+    - main
+  schedule:
+  - cron: "0 * * * *"
+    
+jobs:
+  afvalkalender:
+    environment: main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install -r requirements.txt
+      - name: Scrape and call
+        run: |
+          python afvalkalender.py
+        env:
+          POSTAL_CODE: ${{ secrets.POSTAL_CODE }}
+          HOUSE_NUMBER: ${{ secrets.HOUSE_NUMBER }}
+          IFTTT_MAKER_KEY: ${{ secrets.IFTTT_MAKER_KEY }}
