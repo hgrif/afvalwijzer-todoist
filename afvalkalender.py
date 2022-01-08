@@ -6,14 +6,12 @@ from collections import namedtuple
 import requests
 from bs4 import BeautifulSoup
 
-IFTTT_URL = "https://maker.ifttt.com/trigger/afvalkalender/json/with/key/"
 
 Collection = namedtuple("Collection", ["when", "what"])
 
 
-class Parser:
-    def __init__(self, page):
-        self.soup = BeautifulSoup(page, "html.parser")
+class AfvalkalenderParser:
+    def __init__(self):
         self.year = None
         self.months = {
             "januari": 1,
@@ -30,8 +28,9 @@ class Parser:
             "december": 12,
         }
 
-    def parse_collections(self):
-        container = self.soup.find(class_="ophaaldagen")
+    def parse_page(self, page):
+        soup = BeautifulSoup(page, "html.parser")
+        container = soup.find(class_="ophaaldagen")
         self.year = container.get("id")[-4:]
         dates = container.find_all(class_="span-line-break")
         events = container.find_all(class_="afvaldescr")
@@ -44,6 +43,25 @@ class Parser:
         return Collection(when, what)
 
 
+def main(postal_code, house_number, ifft_maker_key):
+    logger = logging.getLogger(__name__)
+    response = requests.get(
+        f"https://www.mijnafvalwijzer.nl/nl/{postal_code}/{house_number}"
+    )
+    collections = AfvalkalenderParser().parse_page(response.content)
+    logger.info("Found %i events", len(collections))
+
+    tomorrow = list(find_tomorrows_collections(collections))
+    for collection in tomorrow:
+        logger.info("Posting collection")
+        response = requests.post(
+            "https://maker.ifttt.com/trigger/afvalkalender/json/with/key/"
+            + ifttt_maker_key,
+            json={collection.what: str(collection.when)},
+        )
+        response.raise_for_status()
+
+
 def find_tomorrows_collections(collections):
     tomorrow = dt.date.today() + dt.timedelta(days=1)
     return filter(lambda x: x.when == tomorrow, collections)
@@ -51,18 +69,7 @@ def find_tomorrows_collections(collections):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger(__name__)
     postal_code = os.environ.get("POSTAL_CODE", "3511JK")
     house_number = os.environ.get("HOUSE_NUMBER", 1)
     ifttt_maker_key = os.environ["IFTTT_MAKER_KEY"]
-    response = requests.get(
-        f"https://www.mijnafvalwijzer.nl/nl/{postal_code}/{house_number}"
-    )
-    collections = Parser(response.content).parse_collections()
-    logger.info("Found %i events", len(collections))
-    tomorrow = list(find_tomorrows_collections(collections))
-    for collection in tomorrow:
-        logger.info("Posting collection")
-        response = requests.post(IFTTT_URL + ifttt_maker_key,
-                                 json={collection.what: str(collection.when)})
-        response.raise_for_status()
+    main(postal_code, house_number, ifttt_maker_key)
