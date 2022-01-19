@@ -64,8 +64,8 @@ def main(postal_code, house_number, ifft_maker_key):
 
 def find_future_collections(collections):
     N_DAYS_IN_FUTURE = 2
-    tomorrow = dt.date.today() + dt.timedelta(days=N_DAYS_IN_FUTURE)
-    return filter(lambda x: x.when == tomorrow, collections)
+    future_day = dt.date.today() + dt.timedelta(days=N_DAYS_IN_FUTURE)
+    return filter(lambda x: x.when == future_day, collections)
 
 
 if __name__ == "__main__":
