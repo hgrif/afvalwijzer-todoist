@@ -62,8 +62,9 @@ def main(postal_code, house_number, ifft_maker_key):
         response.raise_for_status()
 
 
-def find_tomorrows_collections(collections):
-    tomorrow = dt.date.today() + dt.timedelta(days=1)
+def find_future_collections(collections):
+    N_DAYS_IN_FUTURE = 2
+    tomorrow = dt.date.today() + dt.timedelta(days=N_DAYS_IN_FUTURE)
     return filter(lambda x: x.when == tomorrow, collections)
 
 
