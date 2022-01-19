@@ -51,9 +51,9 @@ def main(postal_code, house_number, ifft_maker_key):
     collections = AfvalkalenderParser().parse_page(response.content)
     logger.info("Found %i events", len(collections))
 
-    tomorrow = list(find_tomorrows_collections(collections))
-    for collection in tomorrow:
-        logger.info("Posting collection")
+    future = list(find_future_collections(collections))
+    for collection in future:
+        logger.info("Posting collection: %s", collection)
         response = requests.post(
             "https://maker.ifttt.com/trigger/afvalkalender/json/with/key/"
             + ifttt_maker_key,
